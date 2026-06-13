@@ -6,9 +6,9 @@ section .data
     one         dq  1.0
 
 section .bss
-    val_a       resq 2
-    val_b       resq 2
-    val_eps     resq 2
+    a_value           resq 2
+    b_value           resq 2
+    epsilon_value     resq 2
 
 section .text
     global main
@@ -28,44 +28,44 @@ main:
     mov  rdi, [r12 + 8]
     xor  rsi, rsi
     call strtold
-    fstp tword [val_a]
+    fstp tword [a_value]
 
     mov  rdi, [r12 + 16]
     xor  rsi, rsi
     call strtold
-    fstp tword [val_b]
+    fstp tword [b_value]
 
     mov  rdi, [r12 + 24]
     xor  rsi, rsi
     call strtold
-    fstp tword [val_eps]
+    fstp tword [epsilon_value]
 
     fld  qword [one]
-    fld  tword [val_a]
+    fld  tword [a_value]
     fucomip st0, st1
     fstp st0
     jbe  .usage_error
 
     fld  qword [zero]
-    fld  tword [val_b]
+    fld  tword [b_value]
     fucomip st0, st1
     fstp st0
     jbe  .usage_error
 
     fld  qword [zero]
-    fld  tword [val_eps]
+    fld  tword [epsilon_value]
     fucomip st0, st1
     fstp st0
     jbe  .usage_error
 
     sub  rsp, 48
-    fld  tword [val_a]
+    fld  tword [a_value]
     fstp tword [rsp]
-    fld  tword [val_b]
+    fld  tword [b_value]
     fstp tword [rsp + 16]
-    fld  tword [val_eps]
+    fld  tword [epsilon_value]
     fstp tword [rsp + 32]
-    call disc_log
+    call compute_log
     add  rsp, 48
 
     sub  rsp, 16
@@ -95,7 +95,7 @@ main:
     pop  rbp
     ret
 
-disc_log:
+compute_log:
     push rbp
     mov  rbp, rsp
     sub  rsp, 48
@@ -111,7 +111,7 @@ disc_log:
     fld  tword [rbp - 16]
     fucomip st0, st1
     fstp st0
-    ja   .a_greater
+    ja   .a_is_greater
 
     fld  tword [rbp - 32]
     fld  tword [rbp - 16]
@@ -124,7 +124,7 @@ disc_log:
     fsubp
     fucomip st0, st1
     fstp st0
-    jb   .small
+    jb   .epsilon_is_greater
 
     sub  rsp, 48
     fld  tword [rbp - 16]
@@ -133,18 +133,18 @@ disc_log:
     fstp tword [rsp + 16]
     fld  tword [rbp - 48]
     fstp tword [rsp + 32]
-    call disc_log
+    call compute_log
     add  rsp, 48
 
     fld1
     faddp
-    jmp  .return
+    jmp  .epilogue
 
-.small:
+.epsilon_is_greater:
     fld1
-    jmp  .return
+    jmp  .epilogue
 
-.a_greater:
+.a_is_greater:
     sub  rsp, 48
     fld  tword [rbp - 32]
     fstp tword [rsp]
@@ -152,7 +152,7 @@ disc_log:
     fstp tword [rsp + 16]
     fld  tword [rbp - 48]
     fstp tword [rsp + 32]
-    call disc_log
+    call compute_log
     add  rsp, 48
 
     fstp tword [rbp - 16]
@@ -160,7 +160,7 @@ disc_log:
     fld  tword [rbp - 16]
     fdivp
 
-.return:
+.epilogue:
     mov  rsp, rbp
     pop  rbp
     ret
